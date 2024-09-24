@@ -1,4 +1,4 @@
-# Name of the Volume that is being created
+# This is the name of the Volume that is being created
 volume="UserVol"
 
 
@@ -8,42 +8,58 @@ disk_manager() {
   for user in $(dscl . list /Users | grep -v '^_' | grep -v 'daemon' | grep -v 'nobody' | grep -v 'root' | grep -v 'Admin'| grep -v 'admin'); do
 
     echo "User: $user"
-    echo "Creating directories"
 
-    mkdir /Volumes/$volume/$user
-    echo "Directory created"
+    if [ -d "/Volumes/$volume/$user" ]; then
+      echo "$user directory already exists"
+      chmod -R 777 /Volumes/$volume/$user
 
-    for d in Desktop Documents Downloads; do
-      echo "Directory in progress: $d"
+    else
+      echo "Creating directories"
 
-      oldir="/Users/$user"
-      oldird="$oldir/$d"
-      newdir="/Volumes/$volume/$user"
-      newdird="$newdir/$d"
+      # Creating the directory
+      mkdir /Volumes/$volume/$user
+      echo "Directory created"
 
-      cp -r $oldird $newdir
-      echo "$oldird copied to $newdir"
+      # Loop for setting up the new directory for the user
+      for d in Desktop Documents Downloads; do
+        echo "Directory in progress: $d"
 
-      rm -rf $oldird
-      echo "$oldird removed."
+        # Assigning variables
+        oldir="/Users/$user"
+        oldird="$oldir/$d"
+        newdir="/Volumes/$volume/$user"
+        newdird="$newdir/$d"
 
-      ln -s $newdird $oldir
-      echo "Symlink created between $newdird - $oldir"
+        # Copying from old directory to new one
+        cp -r $oldird $newdir
+        echo "$oldird copied to $newdir"
 
-      chmod -R o=rwx $newdird
-      echo "Permissions changed for $newdird"
-      echo "------------"
+        # Removing old directory
+        rm -rf $oldird
+        echo "$oldird removed."
 
-    done
+        # Creating symlink
+        ln -s $newdird $oldir
+        echo "Symlink created between $newdird - $oldir"
+
+        # Change permissions of the directory so they are
+        # accessiable to the user
+        chmod -R o=rwx $newdird
+        echo "Permissions changed for $newdird"
+        echo "------------"
+      done
+    fi
+
     echo "------------"
   done
-
 }
 
 
+# Check if the directory already exists
 if [ -d "/Volumes/$volume" ]; then
   echo "Directory exists!"
   echo "------------"
+  disk_manager
 
 else
   echo "Directory does not exist."
